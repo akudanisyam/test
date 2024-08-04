@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Artikel Blog</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1><a href="index.html">Blog Saya</a></h1>
+    </header>
+    <main>
+        <div id="metadata"></div>
+        <div id="content"></div>
+    </main>
+
+    <script>
+        function renderMarkdown(filename) {
+            console.log('Attempting to load:', filename);
+            var xhr = new XMLHttpRequest();
+            xhr.onreadystatechange = function() {
+                console.log('ReadyState:', xhr.readyState, 'Status:', xhr.status);
+                if (xhr.readyState === 4) {
+                    if (xhr.status === 200) {
+                        const text = xhr.responseText;
+                        const [, frontmatter, content] = text.split('---');
+                        
+                        if (frontmatter && content) {
+                            const metadata = jsyaml.load(frontmatter);
+                            document.getElementById('metadata').innerHTML = `
+                                <h2>${metadata.title || 'Tidak ada judul'}</h2>
+                                <p>Penulis: ${metadata.author || 'Tidak diketahui'}</p>
+                                <p>Tanggal: ${metadata.date || 'Tidak ada tanggal'}</p>
+                            `;
+                            
+                            document.getElementById('content').innerHTML = marked.parse(content);
+                            document.title = metadata.title || 'Artikel Blog';
+                        } else {
+                            throw new Error('Format file tidak valid');
+                        }
+                    } else {
+                        console.error('Error:', xhr.status, xhr.statusText);
+                        document.getElementById('content').innerHTML = `<p>Error: File tidak ditemukan (${xhr.status})</p>`;
+                    }
+                }
+            };
+            xhr.open('GET', `/md/${filename}`, true);
+            xhr.send();
+        }
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const postFilename = urlParams.get('post');
+        if (postFilename) {
+            renderMarkdown(postFilename);
+        } else {
+            document.getElementById('content').innerHTML = '<p>Artikel tidak ditemukan.</p>';
+        }
+    </script>
+</body>
+</html>
